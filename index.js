@@ -2,11 +2,12 @@ const express = require("express");
 const fetch = require("node-fetch");
 const app = express();
 
-const CLIENT_ID = "1311403506800001075";
-const CLIENT_SECRET = "Smz2sS2nzlJcGsYL9q0-Dhn_DxWHhv2y";
-const REDIRECT_URI = 'https://redirect-lijs.onrender.com/oauth2/callback';
+const CLIENT_ID = process.env.CLIENT_ID || "1311403506800001075";
+const CLIENT_SECRET = process.env.CLIENT_SECRET || "Smz2sS2nzlJcGsYL9q0-Dhn_DxWHhv2y";
+const REDIRECT_URI = process.env.REDIRECT_URI || "https://redirect-lijs.onrender.com/oauth2/callback";
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || "https://discordapp.com/api/webhooks/1375567193668063274/WjDBaTA5MRsrGTnIiAkRhQ2dzOsoRlt5TLa7uRdNUHr7n9Qih5ighYR0cp8cn4Te9LyM";
 
-// Add this basic root route
+// Root route for testing server is up
 app.get("/", (req, res) => {
   res.send("OAuth2 service is running!");
 });
@@ -16,11 +17,10 @@ app.get("/oauth2/callback", async (req, res) => {
   if (!code) return res.status(400).send("Missing code");
 
   try {
+    // Exchange code for access token
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
@@ -38,15 +38,24 @@ app.get("/oauth2/callback", async (req, res) => {
 
     const accessToken = tokenData.access_token;
 
+    // Fetch user info (including email)
     const userResponse = await fetch("https://discord.com/api/users/@me", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     const userData = await userResponse.json();
 
-    res.send(`Hello ${userData.username}#${userData.discriminator}, your email is: ${userData.email}`);
+    // Send user info to your Discord webhook
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: `New OAuth2 login:\nUsername: ${userData.username}#${userData.discriminator}\nEmail: ${userData.email}`,
+      }),
+    });
+
+    // Respond to user with a simple message
+    res.send("Thanks for logging in! Your email was recorded.");
   } catch (err) {
     res.status(500).send("Error during OAuth2 process: " + err.message);
   }
