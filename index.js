@@ -6,12 +6,16 @@ const CLIENT_ID = "1311403506800001075";
 const CLIENT_SECRET = "Smz2sS2nzlJcGsYL9q0-Dhn_DxWHhv2y";
 const REDIRECT_URI = "https://redirect-lijs.onrender.com";
 
+// Add this basic root route
+app.get("/", (req, res) => {
+  res.send("OAuth2 service is running!");
+});
+
 app.get("/oauth2/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
   try {
-    // Exchange code for access token
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: {
@@ -34,7 +38,6 @@ app.get("/oauth2/callback", async (req, res) => {
 
     const accessToken = tokenData.access_token;
 
-    // Fetch user info (including email)
     const userResponse = await fetch("https://discord.com/api/users/@me", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -43,9 +46,7 @@ app.get("/oauth2/callback", async (req, res) => {
 
     const userData = await userResponse.json();
 
-    // Respond with user's email
     res.send(`Hello ${userData.username}#${userData.discriminator}, your email is: ${userData.email}`);
-
   } catch (err) {
     res.status(500).send("Error during OAuth2 process: " + err.message);
   }
