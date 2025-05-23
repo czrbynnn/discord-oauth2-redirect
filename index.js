@@ -1,0 +1,57 @@
+const express = require("express");
+const fetch = require("node-fetch");
+const app = express();
+
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+
+app.get("/oauth2/callback", async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.status(400).send("Missing code");
+
+  try {
+    // Exchange code for access token
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: REDIRECT_URI,
+        scope: "email identify",
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    if (tokenData.error) {
+      return res.status(400).json(tokenData);
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // Fetch user info (including email)
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const userData = await userResponse.json();
+
+    // Respond with user's email
+    res.send(`Hello ${userData.username}#${userData.discriminator}, your email is: ${userData.email}`);
+
+  } catch (err) {
+    res.status(500).send("Error during OAuth2 process: " + err.message);
+  }
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
