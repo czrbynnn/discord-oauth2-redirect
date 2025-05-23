@@ -2,8 +2,8 @@ const express = require("express");
 const fetch = require("node-fetch");
 const app = express();
 
-const CLIENT_ID = 1311403506800001075;
-const CLIENT_SECRET = Smz2sS2nzlJcGsYL9q0-Dhn_DxWHhv2y;
+const CLIENT_ID = "1311403506800001075";
+const CLIENT_SECRET = "Smz2sS2nzlJcGsYL9q0-Dhn_DxWHhv2y";
 const REDIRECT_URI = "https://redirect-lijs.onrender.com";
 
 app.get("/oauth2/callback", async (req, res) => {
